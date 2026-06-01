@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+<meta charset="utf-8">
+<title>Prueba Plotly</title>
+
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    margin:20px;
+}
+
+#chart{
+    width:100%;
+    height:700px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div id="chart"></div>
+
+<script>
+
+const params = new URLSearchParams(window.location.search);
+
+const rivid = params.get("rivid") || "610329766";
+const nombreRio = params.get("rio") || "Río";
+
+const url =
+"https://services8.arcgis.com/UYEK9SUzH1am9mbk/arcgis/rest/services/Quebradas/FeatureServer/2/query" +
+"?where=rivid=" + rivid +
+"&outFields=*" +
+"&orderByFields=time" +
+"&f=json";
+
+fetch(url)
+.then(response => response.json())
+.then(data => {
+
+    console.log(data);
+
+    const fechas = [];
+    const median = [];
+    const upper = [];
+    const lower = [];
+
+    data.features.forEach(feature => {
+
+        const a = feature.attributes;
+
+        fechas.push(a.time);
+        median.push(a.flow_median);
+        upper.push(a.flow_uncertainty_upper);
+        lower.push(a.flow_uncertainty_lower);
+
+    });
+
+    Plotly.newPlot(
+        "chart",
+        [
+            {
+                x: fechas,
+                y: upper,
+                mode: "lines",
+                line:{width:0},
+                showlegend:false
+            },
+            {
+                x: fechas,
+                y: lower,
+                mode:"lines",
+                fill:"tonexty",
+                fillcolor:"rgba(0,150,255,0.25)",
+                line:{width:0},
+                name:"Incertidumbre"
+            },
+            {
+                x: fechas,
+                y: median,
+                mode:"lines",
+                line:{
+                    color:"black",
+                    width:2
+                },
+                name:"Pronóstico"
+            }
+        ],
+        {
+            title:`Pronóstico de caudales - ${nombreRio}`,
+            xaxis:{
+                title:"Fecha"
+            },
+            yaxis:{
+                title:"Caudal (m³/s)"
+            }
+        }
+    );
+
+})
+
+.catch(error => {
+
+    console.error(error);
+
+});
+
+</script>
+
+</body>
+</html>

@@ -9,14 +9,18 @@
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
 <style>
-body{
+html, body{
+    width:100%;
+    height:100%;
+    margin:0;
+    padding:0;
+    overflow:hidden;
     font-family: Arial, sans-serif;
-    margin:20px;
 }
 
 #chart{
     width:100%;
-    height:700px;
+    height:100%;
 }
 </style>
 
@@ -62,46 +66,68 @@ fetch(url)
 
     });
 
-    Plotly.newPlot(
-        "chart",
-        [
-            {
-                x: fechas,
-                y: upper,
-                mode: "lines",
-                line:{width:0},
-                showlegend:false
-            },
-            {
-                x: fechas,
-                y: lower,
-                mode:"lines",
-                fill:"tonexty",
-                fillcolor:"rgba(0,150,255,0.25)",
-                line:{width:0},
-                name:"Incertidumbre"
-            },
-            {
-                x: fechas,
-                y: median,
-                mode:"lines",
-                line:{
-                    color:"black",
-                    width:2
-                },
-                name:"Pronóstico"
-            }
-        ],
+Plotly.newPlot(
+    "chart",
+    [
         {
-            title:`Pronóstico de caudales - ${nombreRio}`,
-            xaxis:{
-                title:"Fecha"
+            x: fechas,
+            y: upper,
+            mode: "lines",
+            line:{width:0},
+            showlegend:false
+        },
+        {
+            x: fechas,
+            y: lower,
+            mode:"lines",
+            fill:"tonexty",
+            fillcolor:"rgba(0,150,255,0.25)",
+            line:{width:0},
+            name:"Incertidumbre"
+        },
+        {
+            x: fechas,
+            y: median,
+            mode:"lines",
+            line:{
+                color:"black",
+                width:2
             },
-            yaxis:{
-                title:"Caudal (m³/s)"
-            }
+            name:"Pronóstico"
         }
-    );
+    ],
+    {
+        autosize:true,
+
+        title:{
+            text:`Pronóstico de caudales - ${nombreRio}`,
+            x:0.5
+        },
+
+        margin:{
+            l:70,
+            r:20,
+            t:60,
+            b:60
+        },
+
+        xaxis:{
+            title:"Fecha"
+        },
+
+        yaxis:{
+            title:"Caudal (m³/s)"
+        }
+    },
+    {
+        responsive:true,
+        displayModeBar:false
+    }
+);
+
+window.addEventListener('resize', () => {
+    Plotly.Plots.resize(document.getElementById('chart'));
+});
 
 })
 
@@ -110,6 +136,7 @@ fetch(url)
     console.error(error);
 
 });
+
 
 </script>
 

@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-
 <html lang="es">
 
 <head>
 <meta charset="utf-8">
-<title>Prueba Plotly</title>
+<title>Convención Hidrológica</title>
 
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
@@ -37,11 +36,10 @@ const params = new URLSearchParams(window.location.search);
 const rivid = params.get("rivid") || "610329766";
 const nombreRio = params.get("rio") || "Río";
 
-const url =
+const forecastUrl =
 "https://services8.arcgis.com/UYEK9SUzH1am9mbk/arcgis/rest/services/Quebradas/FeatureServer/2/query" +
 "?where=rivid=" + rivid +
 "&outFields=*" +
-"&orderByFields=time" +
 "&f=json";
 
 const rpUrl =
@@ -51,159 +49,163 @@ const rpUrl =
 "&f=json";
 
 Promise.all([
-    fetch(url).then(r => r.json()),
+    fetch(forecastUrl).then(r => r.json()),
     fetch(rpUrl).then(r => r.json())
 ])
 .then(([forecastData, rpData]) => {
 
-    console.log(forecastData);
-    console.log(rpData);
+    if(!forecastData.features.length || !rpData.features.length){
+        console.error("Sin datos");
+        return;
+    }
 
-    const fechas = [];
-    const median = [];
-    const upper = [];
-    const lower = [];
+    // Qmax pronosticado
+    const median = forecastData.features.map(
+        f => f.attributes.flow_median
+    );
 
-    forecastData.features.forEach(feature => {
+    const qmax = Math.max(...median);
 
-        const a = feature.attributes;
-
-        fechas.push(a.time);
-        median.push(a.flow_median);
-        upper.push(a.flow_uncertainty_upper);
-        lower.push(a.flow_uncertainty_lower);
-
-    });
-
+    // Periodos de retorno
     const rp = rpData.features[0].attributes;
 
-if(!rpData.features.length){
-    console.error("No hay datos de periodos de retorno");
-    return;
-}
-
     const rp2 = rp.rp2;
-const rp5 = rp.rp5;
-const rp10 = rp.rp10;
-const rp25 = rp.rp25;
-const rp50 = rp.rp50;
-const rp100 = rp.rp100;
-const qmax = Math.max(...median);
+    const rp5 = rp.rp5;
+    const rp10 = rp.rp10;
+    const rp25 = rp.rp25;
+    const rp50 = rp.rp50;
+    const rp100 = rp.rp100;
 
-const porcTR2 = ((qmax / rp2) * 100).toFixed(1);
-const porcTR5 = ((qmax / rp5) * 100).toFixed(1);
-const porcTR10 = ((qmax / rp10) * 100).toFixed(1);
-const porcTR25 = ((qmax / rp25) * 100).toFixed(1);
+    Plotly.newPlot(
+        "chart",
+        [
 
-let estado = "🟢 Normal";
+            {
+                x:[0,1],
+                y:[rp100,rp100],
+                mode:"lines",
+                name:"TR 100 años",
+                line:{
+                    color:"green",
+                    width:3
+                }
+            },
 
-if(qmax >= rp2){
-    estado = "🟡 Vigilancia";
-}
+            {
+                x:[0,1],
+                y:[rp50,rp50],
+                mode:"lines",
+                name:"TR 50 años",
+                line:{
+                    color:"blue",
+                    width:3
+                }
+            },
 
-if(qmax >= rp5){
-    estado = "🟠 Alerta";
-}
+            {
+                x:[0,1],
+                y:[rp25,rp25],
+                mode:"lines",
+                name:"TR 25 años",
+                line:{
+                    color:"purple",
+                    width:3
+                }
+            },
 
-if(qmax >= rp10){
-    estado = "🔴 Emergencia";
-}
-Plotly.newPlot(
-    "chart",
-    [
-          {
-        x: fechas,
-        y: upper,
-        mode:"lines",
-        line:{width:0},
-        showlegend:false
-    },
-    {
-        x: fechas,
-        y: lower,
-        mode:"lines",
-        fill:"tonexty",
-        fillcolor:"rgba(0,150,255,0.25)",
-        line:{width:0},
-        name:"Incertidumbre"
-    },
-    {
-        x: fechas,
-        y: median,
-        mode:"lines",
-        line:{
-            color:"black",
-            width:2
-        },
-        name:"Pronóstico"
-    }
-],
-    {
-    autosize:true,
+            {
+                x:[0,1],
+                y:[rp10,rp10],
+                mode:"lines",
+                name:"TR 10 años",
+                line:{
+                    color:"red",
+                    width:3
+                }
+            },
 
-    title:{
-        text:`Pronóstico de caudales - ${nombreRio}`,
-        x:0.5
-    },
+            {
+                x:[0,1],
+                y:[rp5,rp5],
+                mode:"lines",
+                name:"TR 5 años",
+                line:{
+                    color:"orange",
+                    width:3
+                }
+            },
 
-    margin:{
-        l:70,
-        r:20,
-        t:60,
-        b:60
-    },
+            {
+                x:[0,1],
+                y:[rp2,rp2],
+                mode:"lines",
+                name:"TR 2 años",
+                line:{
+                    color:"gold",
+                    width:3
+                }
+            },
 
-    xaxis:{
-        title:"Fecha"
-    },
+            {
+                x:[0,1],
+                y:[qmax,qmax],
+                mode:"lines",
+                name:"Qmax pronosticado",
+                line:{
+                    color:"black",
+                    width:4,
+                    dash:"dash"
+                }
+            }
 
-    yaxis:{
-        title:"Caudal (m³/s)"
-    },
+        ],
 
-    annotations:[
         {
-            xref:"paper",
-            yref:"paper",
+            autosize:true,
 
-            x:0.98,
-            y:0.98,
+            title:{
+                text:`Convención hidrológica - ${nombreRio}`,
+                x:0.5
+            },
 
-            xanchor:"right",
-            yanchor:"top",
+            margin:{
+                l:70,
+                r:180,
+                t:60,
+                b:40
+            },
 
-            align:"left",
+            xaxis:{
+                visible:false,
+                fixedrange:true
+            },
 
-            bgcolor:"rgba(255,255,255,0.95)",
-            bordercolor:"#666",
-            borderwidth:1,
+            yaxis:{
+                title:"Caudal (m³/s)"
+            },
 
-            text:
-                "<b>" + estado + "</b><br><br>" +
-                "<b>Caudal máximo:</b> " + qmax.toFixed(2) + " m³/s<br>" +
-                "<b>TR 2 años:</b> " + rp2.toFixed(2) + " m³/s (" + porcTR2 + "%)<br>" +
-                "<b>TR 5 años:</b> " + rp5.toFixed(2) + " m³/s (" + porcTR5 + "%)<br>" +
-                "<b>TR 10 años:</b> " + rp10.toFixed(2) + " m³/s (" + porcTR10 + "%)<br>" +
-                "<b>TR 25 años:</b> " + rp25.toFixed(2) + " m³/s (" + porcTR25 + "%)",
+            legend:{
+                x:1.02,
+                y:1,
+                xanchor:"left",
+                yanchor:"top",
+                bgcolor:"rgba(255,255,255,0.8)"
+            }
+        },
 
-            showarrow:false
+        {
+            responsive:true,
+            displayModeBar:false
         }
-    ]
-}
-);
+    );
+
+});
 
 window.addEventListener('resize', () => {
-    Plotly.Plots.resize(document.getElementById('chart'));
+    Plotly.Plots.resize(
+        document.getElementById('chart')
+    );
 });
-
-})
-
-.catch(error => {
-
-    console.error(error);
-
-});
-
 
 </script>
 

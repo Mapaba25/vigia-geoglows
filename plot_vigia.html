@@ -44,18 +44,27 @@ const url =
 "&orderByFields=time" +
 "&f=json";
 
-fetch(url)
-.then(response => response.json())
-.then(data => {
+const rpUrl =
+"https://services8.arcgis.com/UYEK9SUzH1am9mbk/arcgis/rest/services/Quebradas/FeatureServer/3/query" +
+"?where=rivid=" + rivid +
+"&outFields=*" +
+"&f=json";
 
-    console.log(data);
+Promise.all([
+    fetch(url).then(r => r.json()),
+    fetch(rpUrl).then(r => r.json())
+])
+.then(([forecastData, rpData]) => {
+
+    console.log(forecastData);
+    console.log(rpData);
 
     const fechas = [];
     const median = [];
     const upper = [];
     const lower = [];
 
-    data.features.forEach(feature => {
+    forecastData.features.forEach(feature => {
 
         const a = feature.attributes;
 
@@ -66,63 +75,121 @@ fetch(url)
 
     });
 
+    const rp = rpData.features[0].attributes;
+
+if(!rpData.features.length){
+    console.error("No hay datos de periodos de retorno");
+    return;
+}
+
+    const rp2 = rp.rp2;
+const rp5 = rp.rp5;
+const rp10 = rp.rp10;
+const rp25 = rp.rp25;
+const rp50 = rp.rp50;
+const rp100 = rp.rp100;
+const qmax = Math.max(...median);
+
+const porcTR2 = ((qmax / rp2) * 100).toFixed(1);
+const porcTR5 = ((qmax / rp5) * 100).toFixed(1);
+const porcTR10 = ((qmax / rp10) * 100).toFixed(1);
+const porcTR25 = ((qmax / rp25) * 100).toFixed(1);
+
+let estado = "🟢 Normal";
+
+if(qmax >= rp2){
+    estado = "🟡 Vigilancia";
+}
+
+if(qmax >= rp5){
+    estado = "🟠 Alerta";
+}
+
+if(qmax >= rp10){
+    estado = "🔴 Emergencia";
+}
 Plotly.newPlot(
     "chart",
     [
-        {
-            x: fechas,
-            y: upper,
-            mode: "lines",
-            line:{width:0},
-            showlegend:false
-        },
-        {
-            x: fechas,
-            y: lower,
-            mode:"lines",
-            fill:"tonexty",
-            fillcolor:"rgba(0,150,255,0.25)",
-            line:{width:0},
-            name:"Incertidumbre"
-        },
-        {
-            x: fechas,
-            y: median,
-            mode:"lines",
-            line:{
-                color:"black",
-                width:2
-            },
-            name:"Pronóstico"
-        }
-    ],
-    {
-        autosize:true,
-
-        title:{
-            text:`Pronóstico de caudales - ${nombreRio}`,
-            x:0.5
-        },
-
-        margin:{
-            l:70,
-            r:20,
-            t:60,
-            b:60
-        },
-
-        xaxis:{
-            title:"Fecha"
-        },
-
-        yaxis:{
-            title:"Caudal (m³/s)"
-        }
+          {
+        x: fechas,
+        y: upper,
+        mode:"lines",
+        line:{width:0},
+        showlegend:false
     },
     {
-        responsive:true,
-        displayModeBar:false
+        x: fechas,
+        y: lower,
+        mode:"lines",
+        fill:"tonexty",
+        fillcolor:"rgba(0,150,255,0.25)",
+        line:{width:0},
+        name:"Incertidumbre"
+    },
+    {
+        x: fechas,
+        y: median,
+        mode:"lines",
+        line:{
+            color:"black",
+            width:2
+        },
+        name:"Pronóstico"
     }
+],
+    {
+    autosize:true,
+
+    title:{
+        text:`Pronóstico de caudales - ${nombreRio}`,
+        x:0.5
+    },
+
+    margin:{
+        l:70,
+        r:20,
+        t:60,
+        b:60
+    },
+
+    xaxis:{
+        title:"Fecha"
+    },
+
+    yaxis:{
+        title:"Caudal (m³/s)"
+    },
+
+    annotations:[
+        {
+            xref:"paper",
+            yref:"paper",
+
+            x:0.98,
+            y:0.98,
+
+            xanchor:"right",
+            yanchor:"top",
+
+            align:"left",
+
+            bgcolor:"rgba(255,255,255,0.95)",
+            bordercolor:"#666",
+            borderwidth:1,
+
+            text:
+                "<b>" + estado + "</b><br><br>" +
+                "<b>Caudal máximo:</b> " + qmax.toFixed(2) + " m³/s<br>" +
+                "<b>TR 2 años:</b> " + rp2.toFixed(2) + " m³/s (" + porcTR2 + "%)<br>" +
+                "<b>TR 5 años:</b> " + rp5.toFixed(2) + " m³/s (" + porcTR5 + "%)<br>" +
+                "<b>TR 10 años:</b> " + rp10.toFixed(2) + " m³/s (" + porcTR10 + "%)<br>" +
+                "<b>TR 25 años:</b> " + rp25.toFixed(2) + " m³/s (" + porcTR25 + "%)",
+
+            showarrow:false
+        }
+    ]
+}
 );
 
 window.addEventListener('resize', () => {

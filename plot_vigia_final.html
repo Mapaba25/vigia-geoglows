@@ -44,35 +44,22 @@ const url =
 "&orderByFields=time" +
 "&f=json";
 
-const rpUrl =
-"https://services8.arcgis.com/UYEK9SUzH1am9mbk/arcgis/rest/services/Quebradas/FeatureServer/3/query" +
-"?where=rivid=" + rivid +
-"&outFields=*" +
-"&f=json";
-
-Promise.all([
-    fetch(url).then(r => r.json()),
-    fetch(rpUrl).then(r => r.json())
-])
-.then(([forecastData, rpData]) => {
-
-    console.log(forecastData);
-    console.log(rpData);
+fetch(url)
+.then(response => response.json())
+.then(data => {
 
     const fechas = [];
     const median = [];
     const upper = [];
     const lower = [];
 
-    forecastData.features.forEach(feature => {
-
+    data.features.forEach(feature => {
         const a = feature.attributes;
 
         fechas.push(a.time);
         median.push(a.flow_median);
         upper.push(a.flow_uncertainty_upper);
         lower.push(a.flow_uncertainty_lower);
-
     });
 
 }

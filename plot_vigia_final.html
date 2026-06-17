@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-
 <html lang="es">
 
 <head>
 <meta charset="utf-8">
-<title>Prueba Plotly</title>
+<title>Pronóstico GEOGLOWS</title>
 
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
@@ -23,7 +22,6 @@ html, body{
     height:100%;
 }
 </style>
-
 </head>
 
 <body>
@@ -48,6 +46,14 @@ fetch(url)
 .then(response => response.json())
 .then(data => {
 
+    console.log("Datos recibidos:", data);
+
+    if (!data.features || data.features.length === 0) {
+        document.getElementById("chart").innerHTML =
+            "<div style='padding:20px'>Sin datos para el RIVID seleccionado</div>";
+        return;
+    }
+
     const fechas = [];
     const median = [];
     const upper = [];
@@ -57,7 +63,7 @@ fetch(url)
 
         const a = feature.attributes;
 
-        fechas.push(a.time);
+        fechas.push(new Date(a.time));
         median.push(a.flow_median);
         upper.push(a.flow_uncertainty_upper);
         lower.push(a.flow_uncertainty_lower);
@@ -70,65 +76,73 @@ fetch(url)
             {
                 x: fechas,
                 y: upper,
-                mode:"lines",
-                line:{width:0},
-                showlegend:false
+                mode: "lines",
+                line: { width: 0 },
+                showlegend: false
             },
             {
                 x: fechas,
                 y: lower,
-                mode:"lines",
-                fill:"tonexty",
-                fillcolor:"rgba(0,150,255,0.25)",
-                line:{width:0},
-                name:"Incertidumbre"
+                mode: "lines",
+                fill: "tonexty",
+                fillcolor: "rgba(0,150,255,0.25)",
+                line: { width: 0 },
+                name: "Incertidumbre"
             },
             {
                 x: fechas,
                 y: median,
-                mode:"lines",
-                line:{
-                    color:"black",
-                    width:2
+                mode: "lines",
+                line: {
+                    color: "black",
+                    width: 2
                 },
-                name:"Pronóstico"
+                name: "Pronóstico"
             }
         ],
         {
-            autosize:true,
+            autosize: true,
 
-            title:{
-                text:`Pronóstico de caudales - ${nombreRio}`,
-                x:0.5
+            title: {
+                text: `Pronóstico de caudales - ${nombreRio}`,
+                x: 0.5
             },
 
-            margin:{
-                l:60,
-                r:20,
-                t:50,
-                b:60
+            margin: {
+                l: 60,
+                r: 20,
+                t: 50,
+                b: 60
             },
 
-            xaxis:{
-                title:"Fecha"
+            xaxis: {
+                title: "Fecha"
             },
 
-            yaxis:{
-                title:"Caudal (m³/s)"
+            yaxis: {
+                title: "Caudal (m³/s)"
             }
         },
         {
-            responsive:true,
-            displayModeBar:false
+            responsive: true,
+            displayModeBar: false
         }
     );
 
-    window.addEventListener('resize', () => {
-        Plotly.Plots.resize(document.getElementById('chart'));
-    });
+})
+.catch(error => {
 
-})  // ← aquí termina el then
+    console.error(error);
 
+    document.getElementById("chart").innerHTML =
+        "<div style='padding:20px;color:red'>Error cargando datos</div>";
+
+});
+
+</script>
+
+</body>
+</html>
 .catch(error => {
 
     console.error(error);

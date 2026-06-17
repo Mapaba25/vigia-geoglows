@@ -162,37 +162,33 @@ Plotly.newPlot(
     },
 
        annotations:[
-    {
-        xref:"paper",
-        yref:"paper",
+{
+    xref:"paper",
+    yref:"paper",
 
-        x:0.98,
-        y:0.60,
+    x:0.98,
+    y:0.60,
 
-        xanchor:"right",
-        yanchor:"top",
+    xanchor:"right",
+    yanchor:"top",
 
-            align:"left",
+    align:"left",
 
-            bgcolor:"rgba(255,255,255,0.95)",
-            bordercolor:"#666",
-            borderwidth:1,
+    bgcolor:"rgba(255,255,255,0.90)",
+    bordercolor:"#999",
+    borderwidth:1,
 
-        font:{
-            size:10
-        },
+    font:{
+        size:11
+    },
 
-            text:
-                "<b>" + estado + "</b><br><br>" +
-                "<b>Caudal máximo:</b> " + qmax.toFixed(2) + " m³/s<br>" +
-                "<b>TR 2 años:</b> " + rp2.toFixed(2) + " m³/s (" + porcTR2 + "%)<br>" +
-                "<b>TR 5 años:</b> " + rp5.toFixed(2) + " m³/s (" + porcTR5 + "%)<br>" +
-                "<b>TR 10 años:</b> " + rp10.toFixed(2) + " m³/s (" + porcTR10 + "%)<br>" +
-                "<b>TR 25 años:</b> " + rp25.toFixed(2) + " m³/s (" + porcTR25 + "%)",
+    text:
+        "<b>" + estado + "</b><br>" +
+        "Caudal máximo: " + qmax.toFixed(2) + " m³/s",
 
-            showarrow:false
-        }
-    ]
+    showarrow:false
+}
+]
 }
 );
 

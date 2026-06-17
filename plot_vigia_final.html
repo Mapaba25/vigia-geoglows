@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+<meta charset="utf-8">
+<title>Prueba Plotly</title>
+
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+
+<style>
+html, body{
+    width:100%;
+    height:100%;
+    margin:0;
+    padding:0;
+    overflow:hidden;
+    font-family: Arial, sans-serif;
+}
+
+#chart{
+    width:100%;
+    height:100%;
+}
+</style>
+
+</head>
+
+<body>
+
+<div id="chart"></div>
+
+<script>
+
+const params = new URLSearchParams(window.location.search);
+
+const rivid = params.get("rivid") || "610329766";
+const nombreRio = params.get("rio") || "Río";
+
+const url =
+"https://services8.arcgis.com/UYEK9SUzH1am9mbk/arcgis/rest/services/Quebradas/FeatureServer/2/query" +
+"?where=rivid=" + rivid +
+"&outFields=*" +
+"&orderByFields=time" +
+"&f=json";
+
+const rpUrl =
+"https://services8.arcgis.com/UYEK9SUzH1am9mbk/arcgis/rest/services/Quebradas/FeatureServer/3/query" +
+"?where=rivid=" + rivid +
+"&outFields=*" +
+"&f=json";
+
+Promise.all([
+    fetch(url).then(r => r.json()),
+    fetch(rpUrl).then(r => r.json())
+])
+.then(([forecastData, rpData]) => {
+
+    console.log(forecastData);
+    console.log(rpData);
+
+    const fechas = [];
+    const median = [];
+    const upper = [];
+    const lower = [];
+
+    forecastData.features.forEach(feature => {
+
+        const a = feature.attributes;
+
+        fechas.push(a.time);
+        median.push(a.flow_median);
+        upper.push(a.flow_uncertainty_upper);
+        lower.push(a.flow_uncertainty_lower);
+
+    });
+
+    const rp = rpData.features[0].attributes;
+
+if(!rpData.features.length){
+    console.error("No hay datos de periodos de retorno");
+    return;
+}
+
+    const rp2 = rp.rp2;
+const rp5 = rp.rp5;
+const rp10 = rp.rp10;
+const rp25 = rp.rp25;
+const rp50 = rp.rp50;
+const rp100 = rp.rp100;
+const qmax = Math.max(...median);
+
+const porcTR2 = ((qmax / rp2) * 100).toFixed(1);
+const porcTR5 = ((qmax / rp5) * 100).toFixed(1);
+const porcTR10 = ((qmax / rp10) * 100).toFixed(1);
+const porcTR25 = ((qmax / rp25) * 100).toFixed(1);
+
+let estado = "🟢 Normal";
+
+if(qmax >= rp2){
+    estado = "🟡 Vigilancia";
+}
+
+if(qmax >= rp5){
+    estado = "🟠 Alerta";
+}
+
+if(qmax >= rp10){
+    estado = "🔴 Emergencia";
+}
+Plotly.newPlot(
+    "chart",
+    [
+          {
+        x: fechas,
+        y: upper,
+        mode:"lines",
+        line:{width:0},
+        showlegend:false
+    },
+    {
+        x: fechas,
+        y: lower,
+        mode:"lines",
+        fill:"tonexty",
+        fillcolor:"rgba(0,150,255,0.25)",
+        line:{width:0},
+        name:"Incertidumbre"
+    },
+    {
+        x: fechas,
+        y: median,
+        mode:"lines",
+        line:{
+            color:"black",
+            width:2
+        },
+        name:"Pronóstico"
+    }
+],
+    {
+    autosize:true,
+
+    title:{
+        text:`Pronóstico de caudales - ${nombreRio}`,
+        x:0.5
+    },
+
+    margin:{
+        l:70,
+        r:20,
+        t:60,
+        b:60
+    },
+
+    xaxis:{
+        title:"Fecha"
+    },
+
+    yaxis:{
+        title:"Caudal (m³/s)"
+    },
+
+    annotations:[
+        {
+            xref:"paper",
+            yref:"paper",
+
+            x:0.98,
+            y:0.98,
+
+            xanchor:"right",
+            yanchor:"top",
+
+            align:"left",
+
+            bgcolor:"rgba(255,255,255,0.95)",
+            bordercolor:"#666",
+            borderwidth:1,
+
+            text:
+                "<b>" + estado + "</b><br><br>" +
+                "<b>Caudal máximo:</b> " + qmax.toFixed(2) + " m³/s<br>" +
+                "<b>TR 2 años:</b> " + rp2.toFixed(2) + " m³/s (" + porcTR2 + "%)<br>" +
+                "<b>TR 5 años:</b> " + rp5.toFixed(2) + " m³/s (" + porcTR5 + "%)<br>" +
+                "<b>TR 10 años:</b> " + rp10.toFixed(2) + " m³/s (" + porcTR10 + "%)<br>" +
+                "<b>TR 25 años:</b> " + rp25.toFixed(2) + " m³/s (" + porcTR25 + "%)",
+
+            showarrow:false
+        }
+    ]
+}
+);
+
+window.addEventListener('resize', () => {
+    Plotly.Plots.resize(document.getElementById('chart'));
+});
+
+})
+
+.catch(error => {
+
+    console.error(error);
+
+});
+
+
+</script>
+
+</body>
+</html>
